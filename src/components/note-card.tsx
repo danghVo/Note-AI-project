@@ -34,17 +34,17 @@ interface NoteCardProps {
 }
 
 export function NoteCard({ note, onDelete }: NoteCardProps) {
-  // Map priority to border color class
+  // Map priority to border color class for the full card
   const getPriorityBorderClass = (priority: 'low' | 'medium' | 'high') => {
     switch (priority) {
       case 'high':
-        return 'border-l-destructive'; // Red-like color from theme
+        return 'border-destructive'; // Red-like color from theme
       case 'medium':
-        return 'border-l-[#fbde37]'; // Yellow
+        return 'border-[#fbde37]'; // Yellow
       case 'low':
-        return 'border-l-[#007FFF]'; // Blue
+        return 'border-[#007FFF]'; // Blue
       default:
-        return 'border-l-transparent'; // Default no border color
+        return 'border-border'; // Default border color from theme
     }
   };
 
@@ -77,8 +77,8 @@ export function NoteCard({ note, onDelete }: NoteCardProps) {
        <DialogTrigger asChild>
          {/* Make the entire card the trigger, add priority border */}
          <Card className={cn(
-            "flex flex-col h-full hover:shadow-lg transition-shadow duration-200 bg-card cursor-pointer border-l-4",
-             getPriorityBorderClass(note.priority) // Apply dynamic border color
+            "flex flex-col h-full hover:shadow-lg transition-shadow duration-200 bg-card cursor-pointer border-2", // Use border-2 for thickness
+             getPriorityBorderClass(note.priority) // Apply dynamic border color to the whole card
              )}>
            <CardHeader>
              <div className="flex justify-between items-start">
