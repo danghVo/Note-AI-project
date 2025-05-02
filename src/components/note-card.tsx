@@ -152,9 +152,10 @@ export function NoteCard({ note, onDelete, onSaveSuccess }: NoteCardProps) {
              </div>
            </CardHeader>
            {/* Reduced padding in content p-4 pt-0, adjusted max-height and overflow */}
-           <CardContent className="flex-grow prose prose-sm dark:prose-invert max-h-[4.5rem] overflow-hidden text-ellipsis p-4 pt-0"> {/* Adjusted max-h slightly */}
+           <CardContent className="flex-grow prose prose-sm dark:prose-invert max-h-[3rem] overflow-hidden text-ellipsis p-4 pt-0"> {/* Adjusted max-h slightly */}
               {/* Render simplified content or an excerpt */}
-              <div dangerouslySetInnerHTML={createMarkup(note.content)} className="line-clamp-3" /> {/* Use line-clamp for better multi-line ellipsis */}
+              {/* Use line-clamp-2 for better multi-line ellipsis */}
+              <div dangerouslySetInnerHTML={createMarkup(note.content)} className="line-clamp-2" />
            </CardContent>
            {/* CardFooter removed */}
          </Card>
