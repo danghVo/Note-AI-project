@@ -45,7 +45,7 @@ function saveOrUpdateMockNote(noteToSave: Note): void {
 // Mock data fetching function
 async function fetchNotes(searchTerm?: string | null): Promise<Note[]> {
   // Simulate API call delay
-  await new Promise(resolve => setTimeout(resolve, 300)); // Reduced delay
+  await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network latency
 
   let notesToReturn = [...mockNotes]; // Work with a copy
 
@@ -68,7 +68,7 @@ async function fetchNotes(searchTerm?: string | null): Promise<Note[]> {
 
 // Mock delete function
 async function deleteNoteById(id: string): Promise<boolean> {
-    await new Promise(resolve => setTimeout(resolve, 300)); // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API delay
     const initialLength = mockNotes.length;
     mockNotes = mockNotes.filter(note => note.id !== id);
     return mockNotes.length < initialLength; // Return true if deletion happened
@@ -78,18 +78,16 @@ async function deleteNoteById(id: string): Promise<boolean> {
 
 export function NoteList() {
   const [notes, setNotes] = useState<Note[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // Loading state for initial fetch and subsequent reloads
+  const [deletingNoteId, setDeletingNoteId] = useState<string | null>(null); // State to track which note is being deleted
   const [error, setError] = useState<string | null>(null);
   const searchParams = useSearchParams();
   const searchTerm = searchParams.get('search');
   const { toast } = useToast(); // Use toast for feedback
 
-  // State to manage which dialog is open (if controlling from parent)
-  // We might not need this if NoteCard handles its own Dialog state fully
-  // const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
 
   const loadNotes = async () => {
-      setLoading(true);
+      setLoading(true); // Set loading true at the beginning
       setError(null);
       try {
         const fetchedNotes = await fetchNotes(searchTerm);
@@ -98,27 +96,27 @@ export function NoteList() {
         setError('Failed to load ideas. Please try again.');
         console.error(err);
       } finally {
-        setLoading(false);
+        setLoading(false); // Set loading false after fetching (success or error)
       }
     };
 
   useEffect(() => {
     loadNotes();
-     // Add listener for custom event if needed for NoteForm updates
-    // window.addEventListener('noteSaved', handleNoteUpdate);
-    // return () => window.removeEventListener('noteSaved', handleNoteUpdate);
   }, [searchTerm]); // Re-fetch when searchTerm changes
 
   const handleDeleteNote = async (id: string) => {
+      setDeletingNoteId(id); // Set deleting state for the specific note
       try {
           const success = await deleteNoteById(id);
           if (success) {
-              // Reload notes to reflect the deletion
-              await loadNotes();
               toast({
                   title: "Idea Deleted",
                   description: "The idea has been successfully removed.",
               });
+              // No need to call loadNotes immediately if we filter locally
+              // setNotes(prevNotes => prevNotes.filter(note => note.id !== id));
+              // Or reload from source:
+              await loadNotes(); // Reload notes to reflect the deletion
           } else {
                toast({
                   title: "Deletion Failed",
@@ -133,23 +131,26 @@ export function NoteList() {
               variant: "destructive",
           });
           console.error("Deletion error:", err);
+      } finally {
+           setDeletingNoteId(null); // Reset deleting state regardless of outcome
+           // Ensure loading is false if loadNotes wasn't called on success
+           // setLoading(false);
       }
   };
 
   // Function to handle updates or additions (called from NoteForm onSuccess)
   const handleNoteSaveOrUpdate = (savedNote: Note) => {
+    setLoading(true); // Show loading indicator while saving/updating and refetching
     saveOrUpdateMockNote(savedNote); // Update the mock data source
     loadNotes(); // Reload notes from the updated source to refresh the UI
-    // Optionally close any open dialog here if needed
-    // setEditingNoteId(null);
   };
 
 
-  if (loading) {
+  if (loading && notes.length === 0) { // Show skeletons only on initial load or full reload
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {[...Array(3)].map((_, i) => (
-          <Skeleton key={i} className="h-48 rounded-lg" />
+        {[...Array(6)].map((_, i) => ( // Show more skeletons
+          <Skeleton key={i} className="h-[130px] rounded-lg" /> // Match card height
         ))}
       </div>
     );
@@ -165,7 +166,7 @@ export function NoteList() {
     );
   }
 
-  if (notes.length === 0) {
+  if (!loading && notes.length === 0) { // Show no ideas message only when not loading and notes are empty
     return (
        <div className="text-center py-10">
          <FileWarning className="mx-auto h-12 w-12 text-muted-foreground" />
@@ -177,15 +178,15 @@ export function NoteList() {
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 transition-all duration-300">
+    // Add opacity transition for loading state overlay effect
+    <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 transition-opacity duration-300 ${loading ? 'opacity-50' : 'opacity-100'}`}>
       {notes.map((note) => (
-        // Pass handleNoteSaveOrUpdate down to NoteForm via NoteCard
-        // This requires NoteCard to accept and pass this callback to NoteForm's onSuccess
         <NoteCard
             key={note.id}
             note={note}
             onDelete={handleDeleteNote}
             onSaveSuccess={handleNoteSaveOrUpdate} // Pass the update handler
+            isDeleting={deletingNoteId === note.id} // Pass deleting state
             />
       ))}
     </div>

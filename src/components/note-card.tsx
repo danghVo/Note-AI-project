@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { format, formatDistanceToNow } from 'date-fns';
-import { Clock, FileText, Trash2, CalendarIcon } from 'lucide-react'; // Added CalendarIcon
+import { Clock, FileText, Trash2, CalendarIcon, Loader2 } from 'lucide-react'; // Added CalendarIcon and Loader2
 import type { Note } from '@/types/note';
 import { Button } from './ui/button';
 import {
@@ -35,9 +35,10 @@ interface NoteCardProps {
   note: Note;
   onDelete: (id: string) => void;
   onSaveSuccess: (note: Note) => void; // Callback for successful save/update
+  isDeleting?: boolean; // Optional prop to indicate deletion is in progress
 }
 
-export function NoteCard({ note, onDelete, onSaveSuccess }: NoteCardProps) {
+export function NoteCard({ note, onDelete, onSaveSuccess, isDeleting = false }: NoteCardProps) {
     // State to control dialog visibility
     const [dialogOpen, setDialogOpen] = React.useState(false);
 
@@ -65,7 +66,9 @@ export function NoteCard({ note, onDelete, onSaveSuccess }: NoteCardProps) {
    const handleDeleteConfirm = (e: React.MouseEvent) => {
      // Prevent card click trigger when confirming delete
      e.stopPropagation();
-     onDelete(note.id); // Call the onDelete prop passed from NoteList
+     if (!isDeleting) { // Prevent multiple delete clicks
+        onDelete(note.id); // Call the onDelete prop passed from NoteList
+     }
    };
 
    const handleDeleteTriggerClick = (e: React.MouseEvent) => {
@@ -97,7 +100,7 @@ export function NoteCard({ note, onDelete, onSaveSuccess }: NoteCardProps) {
            <CardHeader className="p-4 flex-row items-start justify-between gap-2">
              <div className="flex-grow overflow-hidden"> {/* Added overflow-hidden */}
                {/* Reduced title size text-base, added break-words */}
-               <CardTitle className="text-base font-semibold mb-1 break-words">{note.title}</CardTitle>
+               <CardTitle className="text-base font-semibold mb-1 break-words line-clamp-1">{note.title}</CardTitle> {/* Added line-clamp-1 */}
                {/* Reduced description size text-[11px], reduced icon size */}
                <CardDescription className="flex items-center text-[11px] text-muted-foreground mt-1">
                  <CalendarIcon className="h-2.5 w-2.5 mr-1" /> {/* Use Calendar Icon */}
@@ -124,11 +127,15 @@ export function NoteCard({ note, onDelete, onSaveSuccess }: NoteCardProps) {
                         <Button
                         variant="ghost"
                         size="icon"
-                         className="h-6 w-6 text-destructive hover:bg-destructive/10 z-10" // Reduced button size
+                         className={cn(
+                             "h-6 w-6 text-destructive hover:bg-destructive/10 z-10", // Reduced button size
+                             isDeleting && "cursor-not-allowed opacity-50" // Style when deleting
+                             )}
                         onClick={handleDeleteTriggerClick} // Stop propagation for the trigger click
                         aria-label="Delete Idea"
+                        disabled={isDeleting} // Disable button when deleting
                         >
-                            <Trash2 className="h-3.5 w-3.5" /> {/* Reduced icon size */}
+                            {isDeleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />} {/* Show loader or trash icon */}
                             <span className="sr-only">Delete Idea</span>
                         </Button>
                     </AlertDialogTrigger>
@@ -141,10 +148,11 @@ export function NoteCard({ note, onDelete, onSaveSuccess }: NoteCardProps) {
                         </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                        <AlertDialogCancel onClick={(e) => e.stopPropagation()}>Cancel</AlertDialogCancel>
+                        <AlertDialogCancel onClick={(e) => e.stopPropagation()} disabled={isDeleting}>Cancel</AlertDialogCancel>
                         {/* Use standard destructive variant for action */}
-                        <AlertDialogAction onClick={handleDeleteConfirm} className={buttonVariants({ variant: "destructive" })}>
-                            Delete
+                        <AlertDialogAction onClick={handleDeleteConfirm} className={buttonVariants({ variant: "destructive" })} disabled={isDeleting}>
+                             {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                             {isDeleting ? 'Deleting...' : 'Delete'}
                         </AlertDialogAction>
                         </AlertDialogFooter>
                     </AlertDialogContent>
