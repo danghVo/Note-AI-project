@@ -1,46 +1,44 @@
 
+'use client';
 
-'use client'; // Ensure this is a client component
-
-import { useState } from 'react'; // Import useState for dialog control
+import { useState, useRef, useCallback } from 'react'; // Import useRef and useCallback
 import { Header } from '@/components/header';
 import { NoteList } from '@/components/note-list';
 import { NoteForm } from '@/components/note-form';
 import { Button } from '@/components/ui/button';
-import { Plus, Loader2 } from 'lucide-react'; // Import Loader2
+import { Plus, Loader2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogDescription, // Import DialogDescription
+  DialogDescription,
 } from "@/components/ui/dialog";
-import type { Note } from '@/types/note'; // Import Note type
+import type { Note } from '@/types/note';
 
 export default function Home() {
-  // State to control the "New Idea" dialog visibility
   const [newIdeaDialogOpen, setNewIdeaDialogOpen] = useState(false);
-  // State to track loading state for the new idea form
-  const [isCreatingNewIdea, setIsCreatingNewIdea] = useState(false);
-  // State to trigger reload in NoteList (could be a counter or boolean)
-  const [reloadCounter, setReloadCounter] = useState(0);
+  // We can potentially remove isCreatingNewIdea if NoteForm manages its own state fully
+  // const [isCreatingNewIdea, setIsCreatingNewIdea] = useState(false);
+
+  // Ref to hold a function that triggers reload in NoteList
+  const reloadNoteListRef = useRef<(() => Promise<void>) | null>(null);
 
 
-  // This function will be passed to the NoteForm inside the "New Idea" dialog.
-  // It handles the submission initiated by NoteForm's internal onSubmit.
-  // NoteForm calls this onSuccess callback *after* its own internal simulated save/toast.
-  const handleNewNoteSaveSuccess = () => {
-    setIsCreatingNewIdea(true); // Indicate loading state starts
-    // Simulate async operation like waiting for data propagation or API confirmation
-    setTimeout(() => {
-      console.log("New Note save process complete on Home page.");
-      setNewIdeaDialogOpen(false); // Close the dialog
-      // Trigger a refresh in NoteList by changing the key or passing a signal
-      setReloadCounter(prev => prev + 1);
-      setIsCreatingNewIdea(false); // Reset loading state
-    }, 500); // Simulate delay matching NoteList fetch/delete
+  // Callback passed to NoteForm, called after successful API save/update
+  const handleNoteSaveSuccess = (savedNote: Note) => {
+    console.log("Note save successful on Home page, closing dialog & refreshing list.");
+    setNewIdeaDialogOpen(false); // Close the dialog
+
+    // Trigger reload in NoteList using the ref
+    reloadNoteListRef.current?.();
   };
+
+   // Callback passed to NoteList to register its reload function
+   const registerReloadHandler = useCallback((reloadFn: () => Promise<void>) => {
+       reloadNoteListRef.current = reloadFn;
+   }, []);
 
 
   return (
@@ -52,12 +50,13 @@ export default function Home() {
             <h1 className="text-2xl font-semibold text-foreground">My Ideas</h1>
              <Dialog open={newIdeaDialogOpen} onOpenChange={setNewIdeaDialogOpen}>
               <DialogTrigger asChild>
-                <Button variant="default" disabled={isCreatingNewIdea}>
-                 {isCreatingNewIdea ? (
+                <Button variant="default"> {/* Removed disabled state based on isCreatingNewIdea */}
+                 {/* Consider if loading state here is still needed or handled within NoteForm button */}
+                 {/* {isCreatingNewIdea ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
+                  ) : ( */}
                     <Plus className="mr-2 h-4 w-4" />
-                  )}
+                  {/* )} */}
                    New Idea
                 </Button>
               </DialogTrigger>
@@ -68,14 +67,14 @@ export default function Home() {
                      Capture your new idea's details below.
                    </DialogDescription>
                 </DialogHeader>
-                 {/* Pass the success handler to the NoteForm for creating new notes */}
-                 {/* NoteForm handles its own submission state, but calls this upon success */}
-                <NoteForm onSuccess={handleNewNoteSaveSuccess} isSubmittingExternal={isCreatingNewIdea} />
+                {/* Pass the success handler to NoteForm */}
+                {/* NoteForm handles its own API call and loading state */}
+                <NoteForm onSuccess={handleNoteSaveSuccess} />
               </DialogContent>
             </Dialog>
           </div>
-           {/* NoteList will fetch and display notes. Pass reloadCounter as key to force re-render/re-fetch */}
-          <NoteList key={reloadCounter} />
+           {/* Pass the register function to NoteList */}
+          <NoteList onRegisterReload={registerReloadHandler} />
         </div>
       </main>
     </div>

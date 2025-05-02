@@ -21,7 +21,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon, Loader2 } from "lucide-react"; // Import Loader2
+import { CalendarIcon, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import {
   Form,
@@ -34,29 +34,29 @@ import {
 } from '@/components/ui/form';
 import { Upload, X, File as FileIcon } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
-import type { Note, NotePriority } from '@/types/note';
+import type { Note, NotePriority, NoteInputData } from '@/types/note'; // Import NoteInputData
 import { cn } from '@/lib/utils';
 
-// Define Zod schema for validation
+// Zod schema for form validation (client-side)
 const noteFormSchema = z.object({
   title: z.string().min(1, 'Title is required').max(100, 'Title is too long'),
   priority: z.enum(['low', 'medium', 'high']),
   content: z.string().min(1, 'Content cannot be empty'),
   createdAt: z.date({
     required_error: "A creation date is required.",
-  }), // Add createdAt field
-  // Attachments will be handled separately
+  }),
+  // Attachments removed for now
 });
 
 type NoteFormValues = z.infer<typeof noteFormSchema>;
 
 interface NoteFormProps {
-  existingNote?: Note; // Optional prop for editing
-  onSuccess?: (savedNote: Note) => void; // Callback after successful internal save simulation
-  isSubmittingExternal?: boolean; // Optional prop to indicate parent component loading state
+  existingNote?: Note;
+  onSuccess?: (savedNote: Note) => void; // Callback after successful API save/update
+  isSubmittingExternal?: boolean; // Should likely be removed if NoteForm handles its own state
 }
 
-// Basic Rich Text Editor Toolbar component
+// Basic Rich Text Editor Toolbar component (remains the same)
 const RichTextToolbar = ({ editorRef }: { editorRef: React.RefObject<HTMLDivElement> }) => {
   const execCmd = (command: string, value?: string) => {
     document.execCommand(command, false, value);
@@ -76,70 +76,61 @@ const RichTextToolbar = ({ editorRef }: { editorRef: React.RefObject<HTMLDivElem
 };
 
 
-export function NoteForm({ existingNote, onSuccess, isSubmittingExternal = false }: NoteFormProps) {
+export function NoteForm({ existingNote, onSuccess }: NoteFormProps) { // Removed isSubmittingExternal
   const { toast } = useToast();
-  const [attachments, setAttachments] = useState<File[]>([]); // Keep attachments separate for now
+  const [attachments, setAttachments] = useState<File[]>([]); // Keep state for potential future use
   const editorRef = useRef<HTMLDivElement>(null);
-  const [isSaving, setIsSaving] = useState(false); // Internal saving state for the form itself
+  const [isSaving, setIsSaving] = useState(false); // Form's own loading state
   const form = useForm<NoteFormValues>({
     resolver: zodResolver(noteFormSchema),
     defaultValues: {
-      title: existingNote?.title || '',
-      priority: existingNote?.priority || 'medium',
-      content: existingNote?.content || '',
-      createdAt: existingNote?.createdAt ? new Date(existingNote.createdAt) : new Date(), // Initialize createdAt
+      title: '', // Initialize empty
+      priority: 'medium',
+      content: '',
+      createdAt: new Date(),
     },
     mode: 'onChange', // Validate on change
   });
 
-   // Effect to set initial content in the div editor when editing
+   // Effect to populate form when existingNote is provided or changes
    useEffect(() => {
-    if (existingNote?.content && editorRef.current) {
-      editorRef.current.innerHTML = existingNote.content;
-      // Ensure form state is updated if content is set externally
-      form.setValue('content', existingNote.content, { shouldValidate: true, shouldDirty: true });
-    }
-     // Set initial attachments when editing
-     if (existingNote?.attachments) {
-        // If attachments are Files already, use them, otherwise, you might need to fetch/recreate File objects if they are just URLs/references
-        setAttachments(existingNote.attachments);
-     }
-    // Reset form when existingNote changes (e.g., opening edit dialog for different note)
-    if (existingNote) {
-        form.reset({
-            title: existingNote.title,
-            priority: existingNote.priority,
-            content: existingNote.content,
-            createdAt: new Date(existingNote.createdAt)
-        });
-        if (editorRef.current) {
-            editorRef.current.innerHTML = existingNote.content;
+        if (existingNote) {
+            form.reset({
+                title: existingNote.title,
+                priority: existingNote.priority,
+                content: existingNote.content,
+                // Ensure createdAt is a Date object for the form field
+                createdAt: existingNote.createdAt ? new Date(existingNote.createdAt) : new Date()
+            });
+            if (editorRef.current) {
+                editorRef.current.innerHTML = existingNote.content;
+            }
+            // Handle attachments if re-enabled
+            // setAttachments(existingNote.attachments || []);
+        } else {
+            // Reset form for creating a new note
+            form.reset({
+                title: '',
+                priority: 'medium',
+                content: '',
+                createdAt: new Date()
+            });
+            if (editorRef.current) {
+                editorRef.current.innerHTML = '';
+            }
+            setAttachments([]);
         }
-    } else {
-        // Reset for new note form
-        form.reset({
-            title: '',
-            priority: 'medium',
-            content: '',
-            createdAt: new Date()
-        });
-        if (editorRef.current) {
-            editorRef.current.innerHTML = '';
-        }
-        setAttachments([]);
-    }
-
-  }, [existingNote, form]); // Depend on existingNote and form instance
+   }, [existingNote, form]); // Rerun when existingNote or form instance changes
 
 
   const handleContentChange = (event: React.FormEvent<HTMLDivElement>) => {
      form.setValue('content', event.currentTarget.innerHTML, { shouldValidate: true, shouldDirty: true });
   };
 
+  // File handling remains client-side for now
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files) {
       const newFiles = Array.from(event.target.files);
-      // Basic validation (e.g., file size, type - add more robust validation)
       const validFiles = newFiles.filter(file => file.size < 5 * 1024 * 1024); // Max 5MB
       if (validFiles.length !== newFiles.length) {
          toast({
@@ -149,68 +140,82 @@ export function NoteForm({ existingNote, onSuccess, isSubmittingExternal = false
           });
       }
       setAttachments((prev) => [...prev, ...validFiles]);
-      // Update form value if needed, although attachments aren't part of the zod schema yet
     }
   };
 
   const removeAttachment = (index: number) => {
     setAttachments((prev) => prev.filter((_, i) => i !== index));
-     // Update form value if needed
   };
 
+  // Main submit handler using API
   const onSubmit = async (data: NoteFormValues) => {
-    setIsSaving(true); // Start internal saving indicator
+    setIsSaving(true);
 
-    const noteToSave: Note = {
-      id: existingNote?.id || Date.now().toString(), // Generate new ID or use existing
+    const noteApiData: NoteInputData = {
       title: data.title,
       priority: data.priority as NotePriority,
       content: data.content,
-      attachments: attachments, // Include attachments
-      createdAt: data.createdAt, // Use date from form
+      createdAt: data.createdAt.toISOString(), // Send ISO string to API
+      // attachments: [] // Handle attachments if sending data
     };
 
-    // Simulate API call/update local state with a delay
-    await new Promise(resolve => setTimeout(resolve, 500)); // Simulate async save
+    const method = existingNote?._id ? 'PUT' : 'POST';
+    const url = existingNote?._id ? `/api/notes/${existingNote.id}` : '/api/notes'; // Use string id
 
     try {
-       console.log("Simulating save for note:", noteToSave);
-       // In a real app, this is where you'd call your API or update global state
+       const response = await fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(noteApiData),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({})); // Try parsing error
+            throw new Error(errorData.message || `Failed to ${existingNote ? 'update' : 'create'} idea.`);
+        }
+
+        const savedNote: Note = await response.json();
+
+        // Ensure createdAt is Date after response
+        const finalNote = {
+            ...savedNote,
+            createdAt: new Date(savedNote.createdAt)
+        };
+
 
        toast({
          title: existingNote ? "Idea Updated" : "Idea Created",
-         description: `"${data.title}" has been saved locally (simulation).`,
+         description: `"${finalNote.title}" has been saved successfully.`,
        });
 
-       // Only reset form if it's NOT an existing note being edited
-       // Keep fields populated for edit until dialog is closed by parent
-       if (!existingNote) {
-            form.reset(); // Reset form fields for new note
-            setAttachments([]); // Clear attachments for new note
-            if (editorRef.current) editorRef.current.innerHTML = ''; // Clear editor for new note
-       }
+        // Only reset form if creating a new note
+        if (!existingNote) {
+            form.reset(); // Reset form fields
+            setAttachments([]); // Clear attachments
+            if (editorRef.current) editorRef.current.innerHTML = ''; // Clear editor
+        }
 
-       onSuccess?.(noteToSave); // Call success callback if provided (e.g., to close dialog and trigger parent loading/refetch)
+       onSuccess?.(finalNote); // Call parent callback (e.g., close dialog, trigger list reload)
 
-    } catch (error) {
+    } catch (error: any) {
          toast({
            title: "Error",
-           description: "Failed to save the idea (simulation).",
+           description: error.message || "Failed to save the idea.",
            variant: "destructive",
          });
          console.error("Save error:", error);
     } finally {
-        setIsSaving(false); // Stop internal saving indicator
+        setIsSaving(false);
     }
   };
-
-  // Combine internal and external submitting states for the button's disabled status
-  const isSubmitting = isSaving || isSubmittingExternal;
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Title and Priority Fields (remain the same) */}
+         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <FormField
             control={form.control}
             name="title"
@@ -218,7 +223,7 @@ export function NoteForm({ existingNote, onSuccess, isSubmittingExternal = false
                 <FormItem>
                 <FormLabel>Title</FormLabel>
                 <FormControl>
-                    <Input placeholder="Enter the idea title" {...field} disabled={isSubmitting} />
+                    <Input placeholder="Enter the idea title" {...field} disabled={isSaving} />
                 </FormControl>
                 <FormMessage />
                 </FormItem>
@@ -231,7 +236,7 @@ export function NoteForm({ existingNote, onSuccess, isSubmittingExternal = false
             render={({ field }) => (
                 <FormItem>
                 <FormLabel>Priority</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isSubmitting}>
+                <Select onValueChange={field.onChange} value={field.value} defaultValue={field.value} disabled={isSaving}>
                     <FormControl>
                     <SelectTrigger>
                         <SelectValue placeholder="Select priority" />
@@ -249,7 +254,9 @@ export function NoteForm({ existingNote, onSuccess, isSubmittingExternal = false
             />
         </div>
 
-         <FormField
+
+        {/* Created At Field (remains the same) */}
+        <FormField
             control={form.control}
             name="createdAt"
             render={({ field }) => (
@@ -264,10 +271,10 @@ export function NoteForm({ existingNote, onSuccess, isSubmittingExternal = false
                             "w-full pl-3 text-left font-normal",
                             !field.value && "text-muted-foreground"
                         )}
-                         disabled={isSubmitting}
+                         disabled={isSaving}
                         >
                         {field.value ? (
-                            format(field.value, "PPP HH:mm") // Format with time (adjust as needed)
+                            format(field.value, "PPP HH:mm") // Format with time
                         ) : (
                             <span>Pick a date</span>
                         )}
@@ -282,10 +289,13 @@ export function NoteForm({ existingNote, onSuccess, isSubmittingExternal = false
                         onSelect={(date) => {
                             if (date) {
                                 // Preserve time if existing, otherwise set to current time
-                                const hours = field.value?.getHours() ?? new Date().getHours();
-                                const minutes = field.value?.getMinutes() ?? new Date().getMinutes();
+                                const currentFieldValue = field.value || new Date();
+                                const hours = currentFieldValue.getHours();
+                                const minutes = currentFieldValue.getMinutes();
                                 date.setHours(hours, minutes);
                                 field.onChange(date);
+                            } else {
+                                field.onChange(undefined); // Allow clearing date
                             }
                         }}
                         disabled={(date) =>
@@ -293,7 +303,23 @@ export function NoteForm({ existingNote, onSuccess, isSubmittingExternal = false
                         }
                         initialFocus
                     />
-                    {/* Optional: Add Time Input Here */}
+                    {/* TODO: Add Time Input Here if needed */}
+                     <div className="p-3 border-t border-border">
+                         <input
+                            type="time"
+                            className="w-full border border-input rounded-md px-2 py-1 text-sm"
+                            value={field.value ? format(field.value, 'HH:mm') : ''}
+                             disabled={!field.value || isSaving}
+                            onChange={(e) => {
+                                if (field.value && e.target.value) {
+                                    const [hours, minutes] = e.target.value.split(':').map(Number);
+                                    const newDate = new Date(field.value);
+                                    newDate.setHours(hours, minutes);
+                                    field.onChange(newDate);
+                                }
+                            }}
+                            />
+                     </div>
                     </PopoverContent>
                 </Popover>
                 <FormDescription>
@@ -304,7 +330,7 @@ export function NoteForm({ existingNote, onSuccess, isSubmittingExternal = false
             )}
         />
 
-
+        {/* Content Field (Rich Text Editor - remains the same) */}
          <FormField
           control={form.control}
           name="content"
@@ -313,18 +339,16 @@ export function NoteForm({ existingNote, onSuccess, isSubmittingExternal = false
               <FormLabel>Content</FormLabel>
                <RichTextToolbar editorRef={editorRef} />
                <FormControl>
-                 {/* Use contentEditable div instead of Textarea */}
                 <div
                   ref={editorRef}
-                  contentEditable={!isSubmitting} // Disable editing when submitting
-                  suppressContentEditableWarning={true} // Suppress warning for controlled contentEditable
-                  onInput={handleContentChange} // Use onInput for contentEditable
-                  // Set initial content via useEffect
+                  contentEditable={!isSaving}
+                  suppressContentEditableWarning={true}
+                  onInput={handleContentChange}
                   dangerouslySetInnerHTML={{ __html: field.value || '' }}
                   className={cn(
                     "min-h-[150px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
                      form.formState.errors.content ? 'border-destructive' : '',
-                     isSubmitting ? 'opacity-50 bg-muted cursor-not-allowed' : '' // Style when disabled
+                     isSaving ? 'opacity-50 bg-muted cursor-not-allowed' : ''
                   )}
                   role="textbox"
                   aria-multiline="true"
@@ -335,15 +359,16 @@ export function NoteForm({ existingNote, onSuccess, isSubmittingExternal = false
           )}
         />
 
+        {/* Attachments Field (remains the same, but not part of saved data yet) */}
         <FormItem>
-          <FormLabel>Attachments</FormLabel>
+          <FormLabel>Attachments (Coming Soon)</FormLabel>
           <FormControl>
             <div className="flex items-center justify-center w-full">
               <label
                 htmlFor="dropzone-file"
                  className={cn(
                     "flex flex-col items-center justify-center w-full h-32 border-2 border-border border-dashed rounded-lg cursor-pointer bg-card hover:bg-secondary transition-colors",
-                    isSubmitting && "cursor-not-allowed opacity-50"
+                    isSaving && "cursor-not-allowed opacity-50" // Disable visually when saving
                  )}
               >
                 <div className="flex flex-col items-center justify-center pt-5 pb-6">
@@ -359,8 +384,9 @@ export function NoteForm({ existingNote, onSuccess, isSubmittingExternal = false
                   className="hidden"
                   multiple
                   onChange={handleFileChange}
-                  accept="image/*,application/pdf,.doc,.docx,.txt" // Example accepted types
-                   disabled={isSubmitting}
+                  accept="image/*,application/pdf,.doc,.docx,.txt"
+                   disabled={true} // Disabled until backend supports it
+                   // disabled={isSaving} // Re-enable when supported
                 />
               </label>
             </div>
@@ -382,7 +408,7 @@ export function NoteForm({ existingNote, onSuccess, isSubmittingExternal = false
                        size="icon"
                        className="h-6 w-6 text-muted-foreground hover:text-destructive"
                        onClick={() => removeAttachment(index)}
-                        disabled={isSubmitting}
+                        disabled={isSaving}
                      >
                        <X className="h-4 w-4" />
                      </Button>
@@ -391,16 +417,21 @@ export function NoteForm({ existingNote, onSuccess, isSubmittingExternal = false
                </ul>
              </div>
            )}
+           <FormDescription>
+                Attachment uploads are currently disabled.
+           </FormDescription>
         </FormItem>
 
+
+        {/* Submit Button */}
         <div className="flex justify-end">
-          {/* Disable button if internal saving, external submitting, form is invalid OR if content is empty (extra check) */}
-          <Button type="submit" disabled={isSubmitting || !form.formState.isValid || !form.getValues('content')}>
-             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {isSaving ? 'Saving...' : (isSubmittingExternal ? 'Processing...' : (existingNote ? 'Update Idea' : 'Create Idea'))}
+          <Button type="submit" disabled={isSaving || !form.formState.isValid || !form.getValues('content')}>
+             {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isSaving ? 'Saving...' : (existingNote ? 'Update Idea' : 'Create Idea')}
           </Button>
         </div>
       </form>
     </Form>
   );
 }
+

@@ -1,5 +1,4 @@
 
-
 import * as React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { format, formatDistanceToNow } from 'date-fns';
@@ -34,15 +33,20 @@ import { Badge } from './ui/badge'; // Import Badge
 interface NoteCardProps {
   note: Note;
   onDelete: (id: string) => void;
-  onSaveSuccess: (note: Note) => void; // Callback for successful save/update
-  isDeleting?: boolean; // Optional prop to indicate deletion is in progress
+  onSaveSuccess: () => void; // Modified: Parent only needs to know success happened to trigger reload
+  isDeleting?: boolean;
 }
 
 export function NoteCard({ note, onDelete, onSaveSuccess, isDeleting = false }: NoteCardProps) {
-    // State to control dialog visibility
     const [dialogOpen, setDialogOpen] = React.useState(false);
 
-  // Map priority to border color class for the full card
+  // Ensure createdAt is a Date object before formatting
+  const createdAtDate = React.useMemo(() => {
+      if (!note.createdAt) return null;
+      return note.createdAt instanceof Date ? note.createdAt : new Date(note.createdAt);
+  }, [note.createdAt]);
+
+
   const getPriorityBorderClass = (priority: 'low' | 'medium' | 'high') => {
     switch (priority) {
       case 'high':
@@ -56,90 +60,77 @@ export function NoteCard({ note, onDelete, onSaveSuccess, isDeleting = false }: 
     }
   };
 
-  // Function to safely render HTML content
   const createMarkup = (htmlContent: string) => {
-    // Basic sanitization (consider a more robust library like DOMPurify for production)
     const cleanHtml = htmlContent.replace(/<script.*?>.*?<\/script>/gi, '');
     return { __html: cleanHtml };
   };
 
    const handleDeleteConfirm = (e: React.MouseEvent) => {
-     // Prevent card click trigger when confirming delete
      e.stopPropagation();
-     if (!isDeleting) { // Prevent multiple delete clicks
-        onDelete(note.id); // Call the onDelete prop passed from NoteList
+     if (!isDeleting && note.id) { // Check if note.id exists
+        onDelete(note.id); // Use string id
      }
    };
 
    const handleDeleteTriggerClick = (e: React.MouseEvent) => {
-     // Prevent the dialog trigger when clicking the delete button itself
      e.stopPropagation();
    };
 
     const handleDialogContentClick = (e: React.MouseEvent) => {
-        // Prevent card click trigger when interacting with dialog/alert content
         e.stopPropagation();
     };
 
-    // Callback for NoteForm success, closes dialog and calls parent handler
+    // Callback for NoteForm success
     const handleFormSuccess = (savedNote: Note) => {
         setDialogOpen(false); // Close the dialog
-        onSaveSuccess(savedNote); // Propagate success to parent (NoteList)
+        onSaveSuccess(); // Just notify parent that save succeeded
     };
 
 
   return (
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
        <DialogTrigger asChild>
-         {/* Make the entire card the trigger, add priority border */}
          <Card className={cn(
-            "flex flex-col h-full hover:shadow-lg transition-shadow duration-200 bg-card cursor-pointer border-2", // Use border-2 for thickness
-             getPriorityBorderClass(note.priority) // Apply dynamic border color to the whole card
+            "flex flex-col h-full hover:shadow-lg transition-shadow duration-200 bg-card cursor-pointer border-2",
+             getPriorityBorderClass(note.priority)
              )}>
-           {/* Reduced padding in header p-4 */}
            <CardHeader className="p-4 flex-row items-start justify-between gap-2">
-             <div className="flex-grow overflow-hidden"> {/* Added overflow-hidden */}
-               {/* Reduced title size text-base, added break-words */}
-               <CardTitle className="text-base font-semibold mb-1 break-words line-clamp-1">{note.title}</CardTitle> {/* Added line-clamp-1 */}
-               {/* Reduced description size text-[11px], reduced icon size */}
+             <div className="flex-grow overflow-hidden">
+               <CardTitle className="text-base font-semibold mb-1 break-words line-clamp-1">{note.title}</CardTitle>
                <CardDescription className="flex items-center text-[11px] text-muted-foreground mt-1">
-                 <CalendarIcon className="h-2.5 w-2.5 mr-1" /> {/* Use Calendar Icon */}
-                 {/* Format date including time */}
-                 {note.createdAt instanceof Date ? format(note.createdAt, "PP H:mm") : 'Invalid date'}
+                 <CalendarIcon className="h-2.5 w-2.5 mr-1" />
+                  {createdAtDate ? format(createdAtDate, "PP H:mm") : 'No date'}
                  <span className="mx-1">·</span>
                  <Clock className="h-2.5 w-2.5 mr-1" />
-                 {/* Display relative time */}
-                 {note.createdAt instanceof Date ? formatDistanceToNow(note.createdAt, { addSuffix: true }) : ''}
+                  {createdAtDate ? formatDistanceToNow(createdAtDate, { addSuffix: true }) : ''}
                </CardDescription>
-                {/* Display number of attachments, reduced icon size */}
+                {/* Attachments display removed for now
                 {note.attachments && note.attachments.length > 0 && (
                     <Badge variant="secondary" className="text-[10px] px-1.5 py-0 pointer-events-none mt-2">
                         <FileText className="h-2.5 w-2.5 mr-1" />
                         {note.attachments.length} attachment{note.attachments.length !== 1 ? 's' : ''}
                     </Badge>
-                )}
+                )} */}
              </div>
-              {/* Actions - Delete Button */}
              <div className="flex-shrink-0">
-                 {/* Delete Button - wrapped in AlertDialog */}
-                 <AlertDialog onOpenChange={(open) => { if (!open) return; /* Handle specific logic on open if needed */ }}>
+                 <AlertDialog onOpenChange={(open) => { /* Handle open if needed */ }}>
                     <AlertDialogTrigger asChild>
                         <Button
                         variant="ghost"
                         size="icon"
                          className={cn(
-                             "h-6 w-6 text-destructive hover:bg-destructive/10 z-10", // Reduced button size
-                             isDeleting && "cursor-not-allowed opacity-50" // Style when deleting
+                             "h-6 w-6 text-destructive hover:bg-destructive/10 z-10",
+                             isDeleting && "cursor-not-allowed opacity-50"
                              )}
-                        onClick={handleDeleteTriggerClick} // Stop propagation for the trigger click
+                        onClick={handleDeleteTriggerClick}
                         aria-label="Delete Idea"
-                        disabled={isDeleting} // Disable button when deleting
+                        disabled={isDeleting || !note.id} // Disable if no ID
                         >
-                            {isDeleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />} {/* Show loader or trash icon */}
+                            {isDeleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
                             <span className="sr-only">Delete Idea</span>
                         </Button>
                     </AlertDialogTrigger>
-                    <AlertDialogContent onClick={handleDialogContentClick} /* Prevent dialog close on content click */ >
+                    <AlertDialogContent onClick={handleDialogContentClick} >
                         <AlertDialogHeader>
                         <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                         <AlertDialogDescription>
@@ -149,7 +140,6 @@ export function NoteCard({ note, onDelete, onSaveSuccess, isDeleting = false }: 
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                         <AlertDialogCancel onClick={(e) => e.stopPropagation()} disabled={isDeleting}>Cancel</AlertDialogCancel>
-                        {/* Use standard destructive variant for action */}
                         <AlertDialogAction onClick={handleDeleteConfirm} className={buttonVariants({ variant: "destructive" })} disabled={isDeleting}>
                              {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                              {isDeleting ? 'Deleting...' : 'Delete'}
@@ -159,19 +149,12 @@ export function NoteCard({ note, onDelete, onSaveSuccess, isDeleting = false }: 
                  </AlertDialog>
              </div>
            </CardHeader>
-           {/* Reduced padding in content p-4 pt-0, adjusted max-height and overflow, ensured pb-4 */}
-           <CardContent className="flex-grow prose prose-sm dark:prose-invert max-h-[3rem] overflow-hidden text-ellipsis p-4 pt-0 pb-4"> {/* Ensured pb-4 */}
-              {/* Render simplified content or an excerpt */}
-              {/* Use line-clamp-2 for better multi-line ellipsis */}
-              {/* Added mb-0 to counteract prose margin for better padding visibility */}
+           <CardContent className="flex-grow prose prose-sm dark:prose-invert max-h-[3rem] overflow-hidden text-ellipsis p-4 pt-0 pb-4">
               <div dangerouslySetInnerHTML={createMarkup(note.content)} className="line-clamp-2 mb-0" />
            </CardContent>
-           {/* CardFooter removed */}
          </Card>
        </DialogTrigger>
-       {/* Edit Dialog Content */}
        <DialogContent className="sm:max-w-[600px]" onClick={handleDialogContentClick} onInteractOutside={(e) => {
-                // Prevent closing dialog when interacting with calendar popover etc.
                 if ((e.target as HTMLElement)?.closest('[data-radix-popper-content-wrapper]')) {
                     e.preventDefault();
                 }
@@ -182,7 +165,7 @@ export function NoteCard({ note, onDelete, onSaveSuccess, isDeleting = false }: 
                 Make changes to your idea here. Click save when you're done.
              </DialogDescription>
           </DialogHeader>
-          {/* Pass the handleFormSuccess callback to NoteForm */}
+          {/* Pass the success handler */}
           <NoteForm existingNote={note} onSuccess={handleFormSuccess} />
        </DialogContent>
      </Dialog>
