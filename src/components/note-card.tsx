@@ -1,5 +1,6 @@
 
 
+import * as React from 'react'; // Import React
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { format, formatDistanceToNow } from 'date-fns';
@@ -179,3 +180,4 @@ export function NoteCard({ note, onDelete, onSaveSuccess }: NoteCardProps) {
      </Dialog>
   );
 }
+
