@@ -18,7 +18,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       {/* Removed whitespace between <html> and <body> */}
-      <body className={`${inter.variable} font-sans antialiased`}> {/* Use Inter font variable */}
+      <body className={`${inter.variable} font-sans antialiased`} suppressHydrationWarning> {/* Add suppressHydrationWarning here */}
         {children}
         <Toaster /> {/* Add Toaster component */}
       </body>
