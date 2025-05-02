@@ -1,21 +1,20 @@
 
-
-import * as React from 'react'; // Import React
+import * as React from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { format, formatDistanceToNow } from 'date-fns';
-import { Clock, FileText, Trash2, CalendarIcon } from 'lucide-react'; // Added CalendarIcon
-import type { Note } from '@/types/note'; // Import the Note type
+import { Clock, FileText, Trash2, CalendarIcon } from 'lucide-react';
+import type { Note } from '@/types/note';
 import { Button } from './ui/button';
 import {
   Dialog,
   DialogContent,
-  DialogDescription, // Added DialogDescription
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { NoteForm } from './note-form'; // Assuming NoteForm can handle editing
+import { NoteForm } from './note-form';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,7 +27,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { cn } from '@/lib/utils';
-import { buttonVariants } from './ui/button'; // Ensure buttonVariants is imported
+import { buttonVariants } from './ui/button';
 
 
 interface NoteCardProps {
@@ -93,37 +92,42 @@ export function NoteCard({ note, onDelete, onSaveSuccess }: NoteCardProps) {
             "flex flex-col h-full hover:shadow-lg transition-shadow duration-200 bg-card cursor-pointer border-2", // Use border-2 for thickness
              getPriorityBorderClass(note.priority) // Apply dynamic border color to the whole card
              )}>
-           <CardHeader>
+           {/* Reduced padding in header p-4 instead of p-6 */}
+           <CardHeader className="p-4">
              <div className="flex justify-between items-start">
-               <CardTitle className="text-lg font-semibold mb-1">{note.title}</CardTitle>
+               {/* Reduced title size text-base instead of text-lg */}
+               <CardTitle className="text-base font-semibold mb-1">{note.title}</CardTitle>
                {/* Removed priority badge from header */}
              </div>
-             <CardDescription className="flex items-center text-xs text-muted-foreground">
-               <CalendarIcon className="h-3 w-3 mr-1" /> {/* Use Calendar Icon */}
+             {/* Reduced description size text-[11px] instead of text-xs, reduced icon size */}
+             <CardDescription className="flex items-center text-[11px] text-muted-foreground">
+               <CalendarIcon className="h-2.5 w-2.5 mr-1" /> {/* Use Calendar Icon */}
                {/* Format date including time, ensure createdAt is a valid Date */}
-               {note.createdAt instanceof Date ? format(note.createdAt, "PPP HH:mm") : 'Invalid date'}
+               {note.createdAt instanceof Date ? format(note.createdAt, "PP H:mm") : 'Invalid date'} {/* Shortened date format */}
                <span className="mx-1">·</span>
-                <Clock className="h-3 w-3 mr-1" />
+                <Clock className="h-2.5 w-2.5 mr-1" />
                 {/* Display relative time */}
                 {note.createdAt instanceof Date ? formatDistanceToNow(note.createdAt, { addSuffix: true }) : ''}
              </CardDescription>
            </CardHeader>
-           <CardContent className="flex-grow prose prose-sm dark:prose-invert max-h-24 overflow-hidden text-ellipsis">
+           {/* Reduced padding in content p-4 pt-0 instead of p-6 pt-0, reduced max-height */}
+           <CardContent className="flex-grow prose prose-sm dark:prose-invert max-h-20 overflow-hidden text-ellipsis p-4 pt-0">
               {/* Render simplified content or an excerpt */}
-              <div dangerouslySetInnerHTML={createMarkup(note.content.substring(0, 100) + (note.content.length > 100 ? '...' : ''))} />
+              <div dangerouslySetInnerHTML={createMarkup(note.content.substring(0, 80) + (note.content.length > 80 ? '...' : ''))} />
            </CardContent>
-           <CardFooter className="flex justify-between items-center text-xs text-muted-foreground pt-4 border-t mt-auto">
+           {/* Reduced padding in footer p-4 pt-3 instead of p-6 pt-4, reduced text size */}
+           <CardFooter className="flex justify-between items-center text-[11px] text-muted-foreground p-4 pt-3 border-t mt-auto">
              <div className="flex items-center gap-1">
-               {/* Display number of attachments */}
+               {/* Display number of attachments, reduced icon size */}
                {note.attachments && note.attachments.length > 0 && (
-                  <Badge variant="secondary" className="text-xs pointer-events-none">
-                    <FileText className="h-3 w-3 mr-1" />
+                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0 pointer-events-none">
+                    <FileText className="h-2.5 w-2.5 mr-1" />
                     {note.attachments.length}
                   </Badge>
                 )}
              </div>
 
-             {/* Actions - Keep Delete button */}
+             {/* Actions - Keep Delete button, reduced size */}
              <div className="flex gap-1">
                  {/* Delete Button - wrapped in AlertDialog */}
                  <AlertDialog onOpenChange={(open) => { if (!open) return; /* Handle specific logic on open if needed */ }}>
@@ -131,11 +135,11 @@ export function NoteCard({ note, onDelete, onSaveSuccess }: NoteCardProps) {
                         <Button
                         variant="ghost"
                         size="icon"
-                        className="h-7 w-7 text-destructive hover:bg-destructive/10 z-10" // Ensure delete button is clickable over card trigger
+                         className="h-6 w-6 text-destructive hover:bg-destructive/10 z-10" // Reduced button size
                         onClick={handleDeleteTriggerClick} // Stop propagation for the trigger click
                         aria-label="Delete Idea"
                         >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-3.5 w-3.5" /> {/* Reduced icon size */}
                             <span className="sr-only">Delete Idea</span>
                         </Button>
                     </AlertDialogTrigger>
