@@ -1,13 +1,15 @@
 
+
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { formatDistanceToNow } from 'date-fns';
-import { Clock, FileText, Trash2 } from 'lucide-react';
+import { format, formatDistanceToNow } from 'date-fns';
+import { Clock, FileText, Trash2, CalendarIcon } from 'lucide-react'; // Added CalendarIcon
 import type { Note } from '@/types/note'; // Import the Note type
 import { Button } from './ui/button';
 import {
   Dialog,
   DialogContent,
+  DialogDescription, // Added DialogDescription
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -25,15 +27,19 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { cn } from '@/lib/utils';
+import { buttonVariants } from './ui/button'; // Ensure buttonVariants is imported
 
 
 interface NoteCardProps {
   note: Note;
-  // Add onDelete callback prop
   onDelete: (id: string) => void;
+  onSaveSuccess: (note: Note) => void; // Callback for successful save/update
 }
 
-export function NoteCard({ note, onDelete }: NoteCardProps) {
+export function NoteCard({ note, onDelete, onSaveSuccess }: NoteCardProps) {
+    // State to control dialog visibility
+    const [dialogOpen, setDialogOpen] = React.useState(false);
+
   // Map priority to border color class for the full card
   const getPriorityBorderClass = (priority: 'low' | 'medium' | 'high') => {
     switch (priority) {
@@ -71,9 +77,15 @@ export function NoteCard({ note, onDelete }: NoteCardProps) {
         e.stopPropagation();
     };
 
+    // Callback for NoteForm success, closes dialog and calls parent handler
+    const handleFormSuccess = (savedNote: Note) => {
+        setDialogOpen(false); // Close the dialog
+        onSaveSuccess(savedNote); // Propagate success to parent (NoteList)
+    };
+
 
   return (
-    <Dialog>
+    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
        <DialogTrigger asChild>
          {/* Make the entire card the trigger, add priority border */}
          <Card className={cn(
@@ -83,12 +95,16 @@ export function NoteCard({ note, onDelete }: NoteCardProps) {
            <CardHeader>
              <div className="flex justify-between items-start">
                <CardTitle className="text-lg font-semibold mb-1">{note.title}</CardTitle>
-               {/* Removed priority badge */}
+               {/* Removed priority badge from header */}
              </div>
              <CardDescription className="flex items-center text-xs text-muted-foreground">
-               <Clock className="h-3 w-3 mr-1" />
-               {/* Ensure createdAt is a valid Date object before formatting */}
-               {note.createdAt instanceof Date ? formatDistanceToNow(note.createdAt, { addSuffix: true }) : 'Invalid date'}
+               <CalendarIcon className="h-3 w-3 mr-1" /> {/* Use Calendar Icon */}
+               {/* Format date including time, ensure createdAt is a valid Date */}
+               {note.createdAt instanceof Date ? format(note.createdAt, "PPP HH:mm") : 'Invalid date'}
+               <span className="mx-1">·</span>
+                <Clock className="h-3 w-3 mr-1" />
+                {/* Display relative time */}
+                {note.createdAt instanceof Date ? formatDistanceToNow(note.createdAt, { addSuffix: true }) : ''}
              </CardDescription>
            </CardHeader>
            <CardContent className="flex-grow prose prose-sm dark:prose-invert max-h-24 overflow-hidden text-ellipsis">
@@ -116,6 +132,7 @@ export function NoteCard({ note, onDelete }: NoteCardProps) {
                         size="icon"
                         className="h-7 w-7 text-destructive hover:bg-destructive/10 z-10" // Ensure delete button is clickable over card trigger
                         onClick={handleDeleteTriggerClick} // Stop propagation for the trigger click
+                        aria-label="Delete Idea"
                         >
                             <Trash2 className="h-4 w-4" />
                             <span className="sr-only">Delete Idea</span>
@@ -130,7 +147,7 @@ export function NoteCard({ note, onDelete }: NoteCardProps) {
                         </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogCancel onClick={(e) => e.stopPropagation()}>Cancel</AlertDialogCancel>
                         {/* Use standard destructive variant for action */}
                         <AlertDialogAction onClick={handleDeleteConfirm} className={buttonVariants({ variant: "destructive" })}>
                             Delete
@@ -142,22 +159,23 @@ export function NoteCard({ note, onDelete }: NoteCardProps) {
            </CardFooter>
          </Card>
        </DialogTrigger>
-       {/* Edit Dialog Content - remains the same */}
-       <DialogContent className="sm:max-w-[600px]" onClick={handleDialogContentClick}>
+       {/* Edit Dialog Content */}
+       <DialogContent className="sm:max-w-[600px]" onClick={handleDialogContentClick} onInteractOutside={(e) => {
+                // Prevent closing dialog when interacting with calendar popover etc.
+                // This might need adjustment based on specific popover implementations
+                if ((e.target as HTMLElement)?.closest('[data-radix-popper-content-wrapper]')) {
+                    e.preventDefault();
+                }
+            }}>
           <DialogHeader>
             <DialogTitle>Edit Idea</DialogTitle>
+             <DialogDescription>
+                Make changes to your idea here. Click save when you're done.
+             </DialogDescription>
           </DialogHeader>
-          {/* Pass a callback to close dialog on success */}
-          <NoteForm existingNote={note} onSuccess={() => {
-             // Potentially close the dialog here if needed,
-             // might require Dialog state management lift-up or context
-             console.log("Edit successful, potentially close dialog");
-             // TODO: Trigger re-fetch or update list state
-          }} />
+          {/* Pass the handleFormSuccess callback to NoteForm */}
+          <NoteForm existingNote={note} onSuccess={handleFormSuccess} />
        </DialogContent>
      </Dialog>
   );
 }
-
-// Add buttonVariants import if not already present
-import { buttonVariants } from './ui/button';
