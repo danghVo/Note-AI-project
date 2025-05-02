@@ -151,7 +151,7 @@ export function NoteCard({ note, onDelete, onSaveSuccess }: NoteCardProps) {
              </div>
            </CardHeader>
            {/* Reduced padding in content p-4 pt-0, reduced max-height */}
-           <CardContent className="flex-grow prose prose-sm dark:prose-invert max-h-20 overflow-hidden text-ellipsis p-4 pt-0">
+           <CardContent className="flex-grow prose prose-sm dark:prose-invert max-h-16 overflow-hidden text-ellipsis p-4 pt-0"> {/* Changed max-h-20 to max-h-16 */}
               {/* Render simplified content or an excerpt */}
               <div dangerouslySetInnerHTML={createMarkup(note.content.substring(0, 80) + (note.content.length > 80 ? '...' : ''))} />
            </CardContent>
