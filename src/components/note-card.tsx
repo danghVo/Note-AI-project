@@ -1,4 +1,5 @@
 
+
 import * as React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -94,8 +95,8 @@ export function NoteCard({ note, onDelete, onSaveSuccess }: NoteCardProps) {
              )}>
            {/* Reduced padding in header p-4 */}
            <CardHeader className="p-4 flex-row items-start justify-between gap-2">
-             <div className="flex-grow">
-               {/* Reduced title size text-base */}
+             <div className="flex-grow overflow-hidden"> {/* Added overflow-hidden */}
+               {/* Reduced title size text-base, added break-words */}
                <CardTitle className="text-base font-semibold mb-1 break-words">{note.title}</CardTitle>
                {/* Reduced description size text-[11px], reduced icon size */}
                <CardDescription className="flex items-center text-[11px] text-muted-foreground mt-1">
