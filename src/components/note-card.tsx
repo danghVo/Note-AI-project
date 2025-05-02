@@ -2,7 +2,7 @@
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { formatDistanceToNow } from 'date-fns';
-import { Clock, FileText, Edit, Trash2 } from 'lucide-react';
+import { Clock, FileText, Trash2 } from 'lucide-react'; // Removed Edit icon
 import type { Note } from '@/types/note'; // Import the Note type
 import { Button } from './ui/button';
 import {
@@ -28,9 +28,11 @@ import {
 
 interface NoteCardProps {
   note: Note;
+  // Add onDelete callback prop
+  onDelete: (id: string) => void;
 }
 
-export function NoteCard({ note }: NoteCardProps) {
+export function NoteCard({ note, onDelete }: NoteCardProps) {
   const getPriorityBadgeVariant = (priority: 'low' | 'medium' | 'high') => {
     switch (priority) {
       case 'high':
@@ -51,24 +53,27 @@ export function NoteCard({ note }: NoteCardProps) {
     return { __html: cleanHtml };
   };
 
-  const handleDelete = (e: React.MouseEvent) => {
-    // Prevent the dialog trigger when clicking delete
-    e.stopPropagation();
-    // Implement deletion logic here (e.g., update state, call API)
-    console.log('Deleting note:', note.id);
-    // Typically, you'd lift state up or use a context/store to manage notes
-    // and trigger a re-render of NoteList after deletion.
-    // Example: onDelete(note.id);
-  };
+   const handleDeleteConfirm = (e: React.MouseEvent) => {
+     // Prevent card click trigger when confirming delete
+     e.stopPropagation();
+     onDelete(note.id); // Call the onDelete prop passed from NoteList
+   };
 
-   const handleDeleteClick = (e: React.MouseEvent) => {
-    // Prevent the dialog trigger when clicking the delete button itself
+   const handleDeleteTriggerClick = (e: React.MouseEvent) => {
+     // Prevent the dialog trigger when clicking the delete button itself
      e.stopPropagation();
    };
+
+    const handleDialogContentClick = (e: React.MouseEvent) => {
+        // Prevent card click trigger when interacting with dialog/alert content
+        e.stopPropagation();
+    };
+
 
   return (
     <Dialog>
        <DialogTrigger asChild>
+         {/* Make the entire card the trigger */}
          <Card className="flex flex-col h-full hover:shadow-lg transition-shadow duration-200 bg-card cursor-pointer">
            <CardHeader>
              <div className="flex justify-between items-start">
@@ -88,53 +93,61 @@ export function NoteCard({ note }: NoteCardProps) {
            </CardContent>
            <CardFooter className="flex justify-between items-center text-xs text-muted-foreground pt-4 border-t mt-auto">
              <div className="flex items-center gap-1">
+               {/* Display number of attachments */}
                {note.attachments && note.attachments.length > 0 && (
-                 <Badge variant="secondary" className="text-xs">
-                   {note.attachments.length} attachment{note.attachments.length > 1 ? 's' : ''}
-                 </Badge>
-               )}
+                  <Badge variant="secondary" className="text-xs pointer-events-none">
+                    <FileText className="h-3 w-3 mr-1" />
+                    {note.attachments.length}
+                  </Badge>
+                )}
              </div>
 
+             {/* Actions - Keep Delete button */}
              <div className="flex gap-1">
                  {/* Delete Button - wrapped in AlertDialog */}
-                 <AlertDialog>
-                   <AlertDialogTrigger asChild>
-                     <Button
-                       variant="ghost"
-                       size="icon"
-                       className="h-7 w-7 text-destructive hover:bg-destructive/10 z-10" // Ensure delete button is clickable over card trigger
-                       onClick={handleDeleteClick} // Stop propagation for the trigger click
-                     >
-                         <Trash2 className="h-4 w-4" />
-                         <span className="sr-only">Delete Idea</span>
-                       </Button>
-                   </AlertDialogTrigger>
-                   <AlertDialogContent onClick={(e) => e.stopPropagation()} /* Prevent dialog close on content click */>
-                     <AlertDialogHeader>
-                       <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                       <AlertDialogDescription>
-                         This action cannot be undone. This will permanently delete the idea
-                         "{note.title}".
-                       </AlertDialogDescription>
-                     </AlertDialogHeader>
-                     <AlertDialogFooter>
-                       <AlertDialogCancel>Cancel</AlertDialogCancel>
-                       <AlertDialogAction onClick={handleDelete} className={getPriorityBadgeVariant('destructive')}>
-                         Delete
-                       </AlertDialogAction>
-                     </AlertDialogFooter>
-                   </AlertDialogContent>
+                 <AlertDialog onOpenChange={(open) => { if (!open) return; /* Handle specific logic on open if needed */ }}>
+                    <AlertDialogTrigger asChild>
+                        <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-destructive hover:bg-destructive/10 z-10" // Ensure delete button is clickable over card trigger
+                        onClick={handleDeleteTriggerClick} // Stop propagation for the trigger click
+                        >
+                            <Trash2 className="h-4 w-4" />
+                            <span className="sr-only">Delete Idea</span>
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent onClick={handleDialogContentClick} /* Prevent dialog close on content click */ >
+                        <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete the idea
+                            "{note.title}".
+                        </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeleteConfirm} className={getPriorityBadgeVariant('destructive')}>
+                            Delete
+                        </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
                  </AlertDialog>
               </div>
            </CardFooter>
          </Card>
        </DialogTrigger>
-       {/* Edit Dialog Content */}
-       <DialogContent className="sm:max-w-[600px]">
+       {/* Edit Dialog Content - remains the same */}
+       <DialogContent className="sm:max-w-[600px]" onClick={handleDialogContentClick}>
           <DialogHeader>
             <DialogTitle>Edit Idea</DialogTitle>
           </DialogHeader>
-          <NoteForm existingNote={note} />
+          {/* Pass a callback to close dialog on success */}
+          <NoteForm existingNote={note} onSuccess={() => {
+             // Potentially close the dialog here if needed,
+             // might require Dialog state management lift-up or context
+             console.log("Edit successful, potentially close dialog");
+          }} />
        </DialogContent>
      </Dialog>
   );

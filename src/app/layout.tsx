@@ -16,7 +16,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning> {/* Added suppressHydrationWarning */}
+    <html lang="en" suppressHydrationWarning>
+      {/* Removed whitespace between <html> and <body> */}
       <body className={`${inter.variable} font-sans antialiased`}> {/* Use Inter font variable */}
         {children}
         <Toaster /> {/* Add Toaster component */}

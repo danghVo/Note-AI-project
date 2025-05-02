@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -7,32 +8,43 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { FileWarning } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import type { Note } from '@/types/note'; // Import the Note type
+import { useToast } from '@/hooks/use-toast'; // Import useToast
 
-// Mock data fetching function - replace with your actual data fetching logic
-async function fetchNotes(searchTerm?: string | null): Promise<Note[]> {
-  // Simulate API call delay
-  await new Promise(resolve => setTimeout(resolve, 500));
-
-  // Sample notes - replace with actual data source (e.g., localStorage, API)
-  const notes: Note[] = [
+// --- Mock Data Storage (Replace with actual backend/localStorage logic) ---
+let mockNotes: Note[] = [
     { id: '1', title: 'My First Brilliant Idea', content: '<p>This is the content of my first idea. It involves <strong>bold text</strong> and <em>italics</em>.</p>', priority: 'high', createdAt: new Date(2023, 10, 15, 10, 30), attachments: [] },
     { id: '2', title: 'Another Concept', content: '<p>A second idea with some basic details.</p>', priority: 'medium', createdAt: new Date(2023, 10, 16, 14, 0), attachments: [] },
     { id: '3', title: 'Quick Note', content: '<p>Just a quick thought.</p>', priority: 'low', createdAt: new Date(2023, 10, 17, 9, 15), attachments: [] },
-     { id: '4', title: 'Project Brainstorm', content: '<p>Let\'s brainstorm for the new project. <ul><li>Feature A</li><li>Feature B</li></ul></p>', priority: 'high', createdAt: new Date(2023, 10, 18, 11, 0), attachments: [] },
-     { id: '5', title: 'Marketing Strategy', content: '<p>Ideas for the upcoming marketing campaign. <ol><li>Social Media Push</li><li>Email Newsletter</li></ol></p>', priority: 'medium', createdAt: new Date(2023, 10, 19, 16, 45), attachments: [] },
-  ];
+    { id: '4', title: 'Project Brainstorm', content: '<p>Let\'s brainstorm for the new project. <ul><li>Feature A</li><li>Feature B</li></ul></p>', priority: 'high', createdAt: new Date(2023, 10, 18, 11, 0), attachments: [] },
+    { id: '5', title: 'Marketing Strategy', content: '<p>Ideas for the upcoming marketing campaign. <ol><li>Social Media Push</li><li>Email Newsletter</li></ol></p>', priority: 'medium', createdAt: new Date(2023, 10, 19, 16, 45), attachments: [] },
+];
+
+// Mock data fetching function
+async function fetchNotes(searchTerm?: string | null): Promise<Note[]> {
+  // Simulate API call delay
+  await new Promise(resolve => setTimeout(resolve, 300)); // Reduced delay
+
+  let notesToReturn = [...mockNotes]; // Work with a copy
 
   if (searchTerm) {
     const lowerCaseSearchTerm = searchTerm.toLowerCase();
-    return notes.filter(note =>
+    notesToReturn = notesToReturn.filter(note =>
       note.title.toLowerCase().includes(lowerCaseSearchTerm) ||
-      // Basic content search (remove HTML tags for better matching)
       note.content.replace(/<[^>]*>/g, '').toLowerCase().includes(lowerCaseSearchTerm)
     );
   }
 
-  return notes.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()); // Sort by newest first
+  return notesToReturn.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()); // Sort by newest first
 }
+
+// Mock delete function
+async function deleteNoteById(id: string): Promise<boolean> {
+    await new Promise(resolve => setTimeout(resolve, 300)); // Simulate API delay
+    const initialLength = mockNotes.length;
+    mockNotes = mockNotes.filter(note => note.id !== id);
+    return mockNotes.length < initialLength; // Return true if deletion happened
+}
+// --- End Mock Data Logic ---
 
 
 export function NoteList() {
@@ -41,6 +53,7 @@ export function NoteList() {
   const [error, setError] = useState<string | null>(null);
   const searchParams = useSearchParams();
   const searchTerm = searchParams.get('search');
+  const { toast } = useToast(); // Use toast for feedback
 
   useEffect(() => {
     async function loadNotes() {
@@ -48,8 +61,6 @@ export function NoteList() {
       setError(null);
       try {
         const fetchedNotes = await fetchNotes(searchTerm);
-        // Simulate getting notes from localStorage or a backend
-        // For now, we use the fetchedNotes directly
         setNotes(fetchedNotes);
       } catch (err) {
         setError('Failed to load ideas. Please try again.');
@@ -60,6 +71,33 @@ export function NoteList() {
     }
     loadNotes();
   }, [searchTerm]); // Re-fetch when searchTerm changes
+
+  const handleDeleteNote = async (id: string) => {
+      try {
+          const success = await deleteNoteById(id);
+          if (success) {
+              setNotes(prevNotes => prevNotes.filter(note => note.id !== id));
+              toast({
+                  title: "Idea Deleted",
+                  description: "The idea has been successfully removed.",
+              });
+          } else {
+               toast({
+                  title: "Deletion Failed",
+                  description: "Could not find the idea to delete.",
+                  variant: "destructive",
+              });
+          }
+      } catch (err) {
+           toast({
+              title: "Error Deleting",
+              description: "An error occurred while deleting the idea.",
+              variant: "destructive",
+          });
+          console.error("Deletion error:", err);
+      }
+  };
+
 
   if (loading) {
     return (
@@ -94,7 +132,8 @@ export function NoteList() {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 transition-all duration-300">
       {notes.map((note) => (
-        <NoteCard key={note.id} note={note} />
+        // Pass the handleDeleteNote function to NoteCard
+        <NoteCard key={note.id} note={note} onDelete={handleDeleteNote} />
       ))}
     </div>
   );
