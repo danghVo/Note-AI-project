@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react'; // Import useCallback
 import { NoteCard } from './note-card';
 import { Skeleton } from './ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -18,7 +18,11 @@ async function fetchNotes(searchTerm?: string | null): Promise<Note[]> {
   const response = await fetch(url, { cache: 'no-store' }); // Disable caching for dynamic data
 
   if (!response.ok) {
-    throw new Error(`Failed to fetch notes: ${response.statusText}`);
+    // Log the detailed error for debugging, but throw a generic message for the UI
+    console.error(`Failed to fetch notes: ${response.status} ${response.statusText}`);
+    const errorBody = await response.text(); // Try to get more details from the body
+    console.error("Error body:", errorBody);
+    throw new Error(`Failed to fetch notes. Status: ${response.status}`); // Throw a more generic error for catch block
   }
   const notes = await response.json();
 
@@ -85,8 +89,12 @@ async function saveOrUpdateNoteAPI(noteData: Note) {
      };
  }
 
+interface NoteListProps {
+    onRegisterReload?: (reloadFn: () => Promise<void>) => void;
+}
 
-export function NoteList() {
+
+export function NoteList({ onRegisterReload }: NoteListProps) {
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingNoteId, setDeletingNoteId] = useState<string | null>(null);
@@ -96,23 +104,31 @@ export function NoteList() {
   const { toast } = useToast();
   const [isSwapping, setIsSwapping] = useState(false); // State for swap loading
 
-  const loadNotes = async () => {
+  const loadNotes = useCallback(async () => {
       setLoading(true);
       setError(null);
       try {
         const fetchedNotes = await fetchNotes(searchTerm);
         setNotes(fetchedNotes);
       } catch (err: any) {
-        setError(err.message || 'Failed to load ideas. Please try again.');
-        console.error(err);
+        console.error("Error loading notes:", err); // Log the actual error for debugging
+        setError("Oops! Something went wrong while loading your ideas. Please try refreshing the page."); // Set user-friendly message
       } finally {
         setLoading(false);
       }
-    };
+    }, [searchTerm]); // Include searchTerm in dependencies
+
+   // Register the reload function with the parent component
+   useEffect(() => {
+      if (onRegisterReload) {
+          onRegisterReload(loadNotes);
+      }
+   }, [onRegisterReload, loadNotes]);
+
 
   useEffect(() => {
     loadNotes();
-  }, [searchTerm]); // Re-fetch when searchTerm changes or component mounts
+  }, [loadNotes]); // Re-fetch when searchTerm changes or component mounts
 
   const handleDeleteNote = async (id: string) => {
       if (!id) {
@@ -253,7 +269,7 @@ export function NoteList() {
        <Alert variant="destructive">
         <FileWarning className="h-4 w-4" />
         <AlertTitle>Error</AlertTitle>
-        <AlertDescription>{error}</AlertDescription>
+        <AlertDescription>{error}</AlertDescription> {/* Display the user-friendly error state */}
       </Alert>
     );
   }
