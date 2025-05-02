@@ -66,6 +66,11 @@ export default {
   			md: 'calc(var(--radius) - 2px)',
   			sm: 'calc(var(--radius) - 4px)'
   		},
+        // Add border color extension to support arbitrary values
+        borderColor: theme => ({
+            ...theme('colors'),
+             DEFAULT: theme('colors.border', 'currentColor'),
+        }),
   		keyframes: {
   			'accordion-down': {
   				from: {

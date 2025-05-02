@@ -2,7 +2,7 @@
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { formatDistanceToNow } from 'date-fns';
-import { Clock, FileText, Trash2 } from 'lucide-react'; // Removed Edit icon
+import { Clock, FileText, Trash2 } from 'lucide-react';
 import type { Note } from '@/types/note'; // Import the Note type
 import { Button } from './ui/button';
 import {
@@ -24,6 +24,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { cn } from '@/lib/utils';
 
 
 interface NoteCardProps {
@@ -33,16 +34,17 @@ interface NoteCardProps {
 }
 
 export function NoteCard({ note, onDelete }: NoteCardProps) {
-  const getPriorityBadgeVariant = (priority: 'low' | 'medium' | 'high') => {
+  // Map priority to border color class
+  const getPriorityBorderClass = (priority: 'low' | 'medium' | 'high') => {
     switch (priority) {
       case 'high':
-        return 'destructive';
+        return 'border-l-destructive'; // Red-like color from theme
       case 'medium':
-        return 'secondary';
+        return 'border-l-[#fbde37]'; // Yellow
       case 'low':
-        return 'outline';
+        return 'border-l-[#007FFF]'; // Blue
       default:
-        return 'outline';
+        return 'border-l-transparent'; // Default no border color
     }
   };
 
@@ -73,18 +75,20 @@ export function NoteCard({ note, onDelete }: NoteCardProps) {
   return (
     <Dialog>
        <DialogTrigger asChild>
-         {/* Make the entire card the trigger */}
-         <Card className="flex flex-col h-full hover:shadow-lg transition-shadow duration-200 bg-card cursor-pointer">
+         {/* Make the entire card the trigger, add priority border */}
+         <Card className={cn(
+            "flex flex-col h-full hover:shadow-lg transition-shadow duration-200 bg-card cursor-pointer border-l-4",
+             getPriorityBorderClass(note.priority) // Apply dynamic border color
+             )}>
            <CardHeader>
              <div className="flex justify-between items-start">
                <CardTitle className="text-lg font-semibold mb-1">{note.title}</CardTitle>
-               <Badge variant={getPriorityBadgeVariant(note.priority)} className="capitalize text-xs">
-                 {note.priority}
-               </Badge>
+               {/* Removed priority badge */}
              </div>
              <CardDescription className="flex items-center text-xs text-muted-foreground">
                <Clock className="h-3 w-3 mr-1" />
-               {formatDistanceToNow(note.createdAt, { addSuffix: true })}
+               {/* Ensure createdAt is a valid Date object before formatting */}
+               {note.createdAt instanceof Date ? formatDistanceToNow(note.createdAt, { addSuffix: true }) : 'Invalid date'}
              </CardDescription>
            </CardHeader>
            <CardContent className="flex-grow prose prose-sm dark:prose-invert max-h-24 overflow-hidden text-ellipsis">
@@ -127,7 +131,8 @@ export function NoteCard({ note, onDelete }: NoteCardProps) {
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDeleteConfirm} className={getPriorityBadgeVariant('destructive')}>
+                        {/* Use standard destructive variant for action */}
+                        <AlertDialogAction onClick={handleDeleteConfirm} className={buttonVariants({ variant: "destructive" })}>
                             Delete
                         </AlertDialogAction>
                         </AlertDialogFooter>
@@ -147,8 +152,12 @@ export function NoteCard({ note, onDelete }: NoteCardProps) {
              // Potentially close the dialog here if needed,
              // might require Dialog state management lift-up or context
              console.log("Edit successful, potentially close dialog");
+             // TODO: Trigger re-fetch or update list state
           }} />
        </DialogContent>
      </Dialog>
   );
 }
+
+// Add buttonVariants import if not already present
+import { buttonVariants } from './ui/button';

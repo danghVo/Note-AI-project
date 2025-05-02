@@ -11,6 +11,7 @@ import type { Note } from '@/types/note'; // Import the Note type
 import { useToast } from '@/hooks/use-toast'; // Import useToast
 
 // --- Mock Data Storage (Replace with actual backend/localStorage logic) ---
+// Ensure createdAt properties are actual Date objects
 let mockNotes: Note[] = [
     { id: '1', title: 'My First Brilliant Idea', content: '<p>This is the content of my first idea. It involves <strong>bold text</strong> and <em>italics</em>.</p>', priority: 'high', createdAt: new Date(2023, 10, 15, 10, 30), attachments: [] },
     { id: '2', title: 'Another Concept', content: '<p>A second idea with some basic details.</p>', priority: 'medium', createdAt: new Date(2023, 10, 16, 14, 0), attachments: [] },
@@ -34,6 +35,13 @@ async function fetchNotes(searchTerm?: string | null): Promise<Note[]> {
     );
   }
 
+  // Ensure createdAt is always a Date object before sorting
+  notesToReturn = notesToReturn.map(note => ({
+      ...note,
+      createdAt: note.createdAt instanceof Date ? note.createdAt : new Date(note.createdAt)
+  }));
+
+
   return notesToReturn.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()); // Sort by newest first
 }
 
@@ -55,8 +63,7 @@ export function NoteList() {
   const searchTerm = searchParams.get('search');
   const { toast } = useToast(); // Use toast for feedback
 
-  useEffect(() => {
-    async function loadNotes() {
+  const loadNotes = async () => {
       setLoading(true);
       setError(null);
       try {
@@ -68,7 +75,9 @@ export function NoteList() {
       } finally {
         setLoading(false);
       }
-    }
+    };
+
+  useEffect(() => {
     loadNotes();
   }, [searchTerm]); // Re-fetch when searchTerm changes
 
@@ -76,7 +85,8 @@ export function NoteList() {
       try {
           const success = await deleteNoteById(id);
           if (success) {
-              setNotes(prevNotes => prevNotes.filter(note => note.id !== id));
+              // Instead of filtering, reload the notes to reflect the change
+              await loadNotes();
               toast({
                   title: "Idea Deleted",
                   description: "The idea has been successfully removed.",
@@ -96,6 +106,12 @@ export function NoteList() {
           });
           console.error("Deletion error:", err);
       }
+  };
+
+  // Function to handle updates (called from NoteForm onSuccess)
+  // This assumes NoteForm calls onSuccess after a successful save/update
+  const handleNoteUpdate = () => {
+    loadNotes(); // Reload notes to show the updated data
   };
 
 
@@ -132,7 +148,8 @@ export function NoteList() {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 transition-all duration-300">
       {notes.map((note) => (
-        // Pass the handleDeleteNote function to NoteCard
+        // Pass the handleDeleteNote and potentially handleNoteUpdate to NoteCard/NoteForm
+        // Note: handleNoteUpdate needs to be passed down to NoteForm via NoteCard's Dialog
         <NoteCard key={note.id} note={note} onDelete={handleDeleteNote} />
       ))}
     </div>
