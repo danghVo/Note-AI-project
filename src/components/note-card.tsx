@@ -1,6 +1,6 @@
 
 import * as React from 'react';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { format, formatDistanceToNow } from 'date-fns';
 import { Clock, FileText, Trash2, CalendarIcon } from 'lucide-react';
@@ -92,43 +92,31 @@ export function NoteCard({ note, onDelete, onSaveSuccess }: NoteCardProps) {
             "flex flex-col h-full hover:shadow-lg transition-shadow duration-200 bg-card cursor-pointer border-2", // Use border-2 for thickness
              getPriorityBorderClass(note.priority) // Apply dynamic border color to the whole card
              )}>
-           {/* Reduced padding in header p-4 instead of p-6 */}
-           <CardHeader className="p-4">
-             <div className="flex justify-between items-start">
-               {/* Reduced title size text-base instead of text-lg */}
-               <CardTitle className="text-base font-semibold mb-1">{note.title}</CardTitle>
-               {/* Removed priority badge from header */}
-             </div>
-             {/* Reduced description size text-[11px] instead of text-xs, reduced icon size */}
-             <CardDescription className="flex items-center text-[11px] text-muted-foreground">
-               <CalendarIcon className="h-2.5 w-2.5 mr-1" /> {/* Use Calendar Icon */}
-               {/* Format date including time, ensure createdAt is a valid Date */}
-               {note.createdAt instanceof Date ? format(note.createdAt, "PP H:mm") : 'Invalid date'} {/* Shortened date format */}
-               <span className="mx-1">·</span>
-                <Clock className="h-2.5 w-2.5 mr-1" />
-                {/* Display relative time */}
-                {note.createdAt instanceof Date ? formatDistanceToNow(note.createdAt, { addSuffix: true }) : ''}
-             </CardDescription>
-           </CardHeader>
-           {/* Reduced padding in content p-4 pt-0 instead of p-6 pt-0, reduced max-height */}
-           <CardContent className="flex-grow prose prose-sm dark:prose-invert max-h-20 overflow-hidden text-ellipsis p-4 pt-0">
-              {/* Render simplified content or an excerpt */}
-              <div dangerouslySetInnerHTML={createMarkup(note.content.substring(0, 80) + (note.content.length > 80 ? '...' : ''))} />
-           </CardContent>
-           {/* Reduced padding in footer p-4 pt-3 instead of p-6 pt-4, reduced text size */}
-           <CardFooter className="flex justify-between items-center text-[11px] text-muted-foreground p-4 pt-3 border-t mt-auto">
-             <div className="flex items-center gap-1">
-               {/* Display number of attachments, reduced icon size */}
-               {note.attachments && note.attachments.length > 0 && (
-                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0 pointer-events-none">
-                    <FileText className="h-2.5 w-2.5 mr-1" />
-                    {note.attachments.length}
-                  </Badge>
+           {/* Reduced padding in header p-4 */}
+           <CardHeader className="p-4 flex-row items-start justify-between gap-2">
+             <div className="flex-grow">
+               {/* Reduced title size text-base */}
+               <CardTitle className="text-base font-semibold mb-1 break-words">{note.title}</CardTitle>
+               {/* Reduced description size text-[11px], reduced icon size */}
+               <CardDescription className="flex items-center text-[11px] text-muted-foreground mt-1">
+                 <CalendarIcon className="h-2.5 w-2.5 mr-1" /> {/* Use Calendar Icon */}
+                 {/* Format date including time */}
+                 {note.createdAt instanceof Date ? format(note.createdAt, "PP H:mm") : 'Invalid date'}
+                 <span className="mx-1">·</span>
+                 <Clock className="h-2.5 w-2.5 mr-1" />
+                 {/* Display relative time */}
+                 {note.createdAt instanceof Date ? formatDistanceToNow(note.createdAt, { addSuffix: true }) : ''}
+               </CardDescription>
+                {/* Display number of attachments, reduced icon size */}
+                {note.attachments && note.attachments.length > 0 && (
+                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 pointer-events-none mt-2">
+                        <FileText className="h-2.5 w-2.5 mr-1" />
+                        {note.attachments.length} attachment{note.attachments.length !== 1 ? 's' : ''}
+                    </Badge>
                 )}
              </div>
-
-             {/* Actions - Keep Delete button, reduced size */}
-             <div className="flex gap-1">
+              {/* Actions - Delete Button */}
+             <div className="flex-shrink-0">
                  {/* Delete Button - wrapped in AlertDialog */}
                  <AlertDialog onOpenChange={(open) => { if (!open) return; /* Handle specific logic on open if needed */ }}>
                     <AlertDialogTrigger asChild>
@@ -160,14 +148,19 @@ export function NoteCard({ note, onDelete, onSaveSuccess }: NoteCardProps) {
                         </AlertDialogFooter>
                     </AlertDialogContent>
                  </AlertDialog>
-              </div>
-           </CardFooter>
+             </div>
+           </CardHeader>
+           {/* Reduced padding in content p-4 pt-0, reduced max-height */}
+           <CardContent className="flex-grow prose prose-sm dark:prose-invert max-h-20 overflow-hidden text-ellipsis p-4 pt-0">
+              {/* Render simplified content or an excerpt */}
+              <div dangerouslySetInnerHTML={createMarkup(note.content.substring(0, 80) + (note.content.length > 80 ? '...' : ''))} />
+           </CardContent>
+           {/* CardFooter removed */}
          </Card>
        </DialogTrigger>
        {/* Edit Dialog Content */}
        <DialogContent className="sm:max-w-[600px]" onClick={handleDialogContentClick} onInteractOutside={(e) => {
                 // Prevent closing dialog when interacting with calendar popover etc.
-                // This might need adjustment based on specific popover implementations
                 if ((e.target as HTMLElement)?.closest('[data-radix-popper-content-wrapper]')) {
                     e.preventDefault();
                 }
@@ -184,4 +177,3 @@ export function NoteCard({ note, onDelete, onSaveSuccess }: NoteCardProps) {
      </Dialog>
   );
 }
-
