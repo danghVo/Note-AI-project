@@ -2,9 +2,8 @@
 
 import * as React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { format, formatDistanceToNow } from 'date-fns';
-import { Clock, FileText, Trash2, CalendarIcon } from 'lucide-react';
+import { Clock, FileText, Trash2, CalendarIcon } from 'lucide-react'; // Added CalendarIcon
 import type { Note } from '@/types/note';
 import { Button } from './ui/button';
 import {
@@ -29,6 +28,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { cn } from '@/lib/utils';
 import { buttonVariants } from './ui/button';
+import { Badge } from './ui/badge'; // Import Badge
 
 
 interface NoteCardProps {
@@ -151,10 +151,10 @@ export function NoteCard({ note, onDelete, onSaveSuccess }: NoteCardProps) {
                  </AlertDialog>
              </div>
            </CardHeader>
-           {/* Reduced padding in content p-4 pt-0, reduced max-height */}
-           <CardContent className="flex-grow prose prose-sm dark:prose-invert max-h-16 overflow-hidden text-ellipsis p-4 pt-0"> {/* Changed max-h-20 to max-h-16 */}
+           {/* Reduced padding in content p-4 pt-0, adjusted max-height and overflow */}
+           <CardContent className="flex-grow prose prose-sm dark:prose-invert max-h-[4.5rem] overflow-hidden text-ellipsis p-4 pt-0"> {/* Adjusted max-h slightly */}
               {/* Render simplified content or an excerpt */}
-              <div dangerouslySetInnerHTML={createMarkup(note.content.substring(0, 80) + (note.content.length > 80 ? '...' : ''))} />
+              <div dangerouslySetInnerHTML={createMarkup(note.content)} className="line-clamp-3" /> {/* Use line-clamp for better multi-line ellipsis */}
            </CardContent>
            {/* CardFooter removed */}
          </Card>
@@ -178,3 +178,4 @@ export function NoteCard({ note, onDelete, onSaveSuccess }: NoteCardProps) {
      </Dialog>
   );
 }
+
