@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback, Suspense } from "react"; // Import useRef and useCallback
+import { useState, useRef, useCallback, Suspense, useEffect } from "react"; // Import useRef and useCallback
 import { Header } from "@/components/header";
 import { NoteList } from "@/components/note-list";
 import { NoteForm } from "@/components/note-form";
@@ -18,18 +18,37 @@ import type { Note } from "@/types/note";
 
 export default function Home() {
     const [newIdeaDialogOpen, setNewNoteDialogOpen] = useState(false);
+    const [stats, setStats] = useState<{
+        db: string;
+        storageSize: number;
+        indexSize: number;
+        dataSize: number;
+    }>({
+        db: "loading...",
+        storageSize: 0,
+        indexSize: 0,
+        dataSize: 0,
+    });
     // We can potentially remove isCreatingNewIdea if NoteForm manages its own state fully
     // const [isCreatingNewIdea, setIsCreatingNewIdea] = useState(false);
 
     // Ref to hold a function that triggers reload in NoteList
     const reloadNoteListRef = useRef<(() => Promise<void>) | null>(null);
 
-    // Callback passed to NoteForm, called after successful API save/update
-    const handleNoteSaveSuccess = (savedNote: Note) => {
-        console.log("Note save successful on Home page, closing dialog & refreshing list.");
-        setNewNoteDialogOpen(false); // Close the dialog
+    const loadDbStats = useCallback(async () => {
+        const response = await fetch("/api/db/stats");
+        const { stats } = await response.json();
 
-        // Trigger reload in NoteList using the ref
+        setStats(stats);
+    }, []);
+
+    useEffect(() => {
+        loadDbStats();
+    }, []);
+
+    // Callback passed to NoteForm, called after successful API save/update
+    const handleNoteSaveSuccess = () => {
+        setNewNoteDialogOpen(false);
         reloadNoteListRef.current?.();
     };
 
@@ -44,6 +63,9 @@ export default function Home() {
                 <Header />
                 <main className="flex-grow p-4 md:p-8">
                     <div className="container mx-auto max-w-6xl">
+                        <div className="text-2xl font-semibold pb-5">
+                            Storage Used: {Math.round((stats.dataSize * 100) / 1024) / 100} MB
+                        </div>
                         <div className="flex justify-between items-center mb-6">
                             <h1 className="text-2xl font-semibold text-foreground">My notes</h1>
                             <Dialog open={newIdeaDialogOpen} onOpenChange={setNewNoteDialogOpen}>
@@ -60,8 +82,6 @@ export default function Home() {
                                             Capture your new note's details below.
                                         </DialogDescription>
                                     </DialogHeader>
-                                    {/* Pass the success handler to NoteForm */}
-                                    {/* NoteForm handles its own API call and loading state */}
                                     <NoteForm onSuccess={handleNoteSaveSuccess} />
                                 </DialogContent>
                             </Dialog>

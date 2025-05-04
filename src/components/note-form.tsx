@@ -196,15 +196,17 @@ export function NoteForm({ existingNote, onSuccess }: NoteFormProps) {
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files) {
             const newFiles = Array.from(event.target.files);
-            const validFiles = newFiles.filter((file) => file.size < 5 * 1024 * 1024); // Max 5MB
-            if (validFiles.length !== newFiles.length) {
-                toast({
-                    title: "Upload Error",
-                    description: "Some files were too large (max 5MB).",
-                    variant: "destructive",
-                });
-            }
-            setAttachments((prev) => [...prev, ...validFiles]);
+
+            // Remove limit 5MB
+            // const validFiles = newFiles.filter((file) => file.size < 5 * 1024 * 1024); // Max 5MB
+            // if (validFiles.length !== newFiles.length) {
+            //     toast({
+            //         title: "Upload Error",
+            //         description: "Some files were too large (max 5MB).",
+            //         variant: "destructive",
+            //     });
+            // }
+            setAttachments((prev) => [...prev, ...newFiles]);
         }
     };
 
@@ -505,9 +507,9 @@ export function NoteForm({ existingNote, onSuccess }: NoteFormProps) {
                                                 </span>{" "}
                                                 or drag and drop
                                             </p>
-                                            <p className="text-xs text-muted-foreground">
+                                            {/* <p className="text-xs text-muted-foreground">
                                                 Max 5MB per file
-                                            </p>
+                                            </p> */}
                                         </div>
                                         <Input
                                             id="dropzone-file"
@@ -515,9 +517,9 @@ export function NoteForm({ existingNote, onSuccess }: NoteFormProps) {
                                             className="hidden"
                                             multiple
                                             onChange={handleFileChange}
-                                            accept="image/*,application/pdf,.doc,.docx,.txt"
+                                            accept="*"
                                             disabled={isSaving} // Re-enable when supported
-                                        />
+                                        />``
                                     </label>
                                 </div>
                             </FormControl>

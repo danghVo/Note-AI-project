@@ -174,7 +174,7 @@ export function NoteCard({ note, onDelete, onSaveSuccess, isDeleting = false }: 
                             </AlertDialog>
                         </div>
                     </CardHeader>
-                    <CardContent className="flex-grow prose prose-sm dark:prose-invert max-h-[3rem] overflow-hidden text-ellipsis p-4 pt-0 pb-4">
+                    <CardContent className="flex-grow prose prose-sm dark:prose-invert max-h-fit text-ellipsis p-4 pt-0 pb-4">
                         <div
                             dangerouslySetInnerHTML={createMarkup(note.content)}
                             className="line-clamp-2 mb-0"
