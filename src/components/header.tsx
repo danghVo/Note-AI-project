@@ -51,9 +51,7 @@ export function Header() {
                             <path d="M9 18h6"></path>
                             <path d="M9 14h6"></path>
                         </svg>
-                        <span className="font-bold sm:inline-block text-foreground">
-                            Notes
-                        </span>
+                        <span className="font-bold sm:inline-block text-foreground">Notes</span>
                     </Link>
                 </div>
                 <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
