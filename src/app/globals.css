@@ -4,25 +4,26 @@
 
 @layer base {
   :root {
+    /* Light Theme - Red, Black, Near Red */
     --background: 0 0% 100%; /* White */
     --foreground: 0 0% 3.9%; /* Near Black */
     --card: 0 0% 100%; /* White */
     --card-foreground: 0 0% 3.9%; /* Near Black */
     --popover: 0 0% 100%; /* White */
     --popover-foreground: 0 0% 3.9%; /* Near Black */
-    --primary: 285 86% 53%; /* #A020F0 - Vibrant Purple */
+    --primary: 0 72% 51%; /* #E11D48 - Vibrant Red */
     --primary-foreground: 0 0% 98%; /* Near White */
     --secondary: 0 0% 94%; /* #F0F0F0 - Neutral Grey */
     --secondary-foreground: 0 0% 9%; /* Dark Grey */
     --muted: 0 0% 94%; /* #F0F0F0 - Neutral Grey */
     --muted-foreground: 0 0% 45.1%; /* Medium Grey */
-    --accent: 207 90% 70%; /* Adjusted #B0E2FF - Calming Blue */
-    --accent-foreground: 210 40% 9.8%; /* Dark Blue/Black */
-    --destructive: 0 84.2% 60.2%; /* Default Red */
+    --accent: 0 70% 70%; /* #F59393 - Near Red (Lighter) */
+    --accent-foreground: 0 0% 3.9%; /* Near Black */
+    --destructive: 0 84.2% 60.2%; /* Default Red (can keep or adjust if needed) */
     --destructive-foreground: 0 0% 98%; /* Near White */
     --border: 0 0% 89.8%; /* Light Grey */
     --input: 0 0% 89.8%; /* Light Grey */
-    --ring: 285 86% 53%; /* #A020F0 - Vibrant Purple */
+    --ring: 0 72% 51%; /* #E11D48 - Vibrant Red */
     --radius: 0.5rem;
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
@@ -31,47 +32,48 @@
     --chart-5: 27 87% 67%;
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-primary: 0 72% 51%; /* Red */
+    --sidebar-primary-foreground: 0 0% 98%; /* Near White */
+    --sidebar-accent: 0 0% 94%; /* Light Grey */
+    --sidebar-accent-foreground: 0 0% 9%; /* Dark Grey */
+    --sidebar-border: 0 0% 89.8%; /* Light Grey */
+    --sidebar-ring: 0 72% 51%; /* Red */
   }
 
   .dark {
+    /* Dark Theme - Red, Black, Near Red */
     --background: 0 0% 10%; /* Near Black */
     --foreground: 0 0% 98%; /* Near White */
     --card: 0 0% 12%; /* Slightly Lighter Black */
     --card-foreground: 0 0% 98%; /* Near White */
     --popover: 0 0% 10%; /* Near Black */
     --popover-foreground: 0 0% 98%; /* Near White */
-    --primary: 285 80% 70%; /* Lighter Purple */
-    --primary-foreground: 285 86% 15%; /* Dark Purple */
+    --primary: 0 80% 65%; /* #F06A6A - Lighter Red */
+    --primary-foreground: 0 0% 10%; /* Near Black */
     --secondary: 0 0% 20%; /* Dark Grey */
     --secondary-foreground: 0 0% 98%; /* Near White */
     --muted: 0 0% 20%; /* Dark Grey */
     --muted-foreground: 0 0% 63.9%; /* Medium Grey */
-    --accent: 207 80% 50%; /* Medium Blue */
+    --accent: 0 60% 45%; /* #B64545 - Near Red (Darker) */
     --accent-foreground: 0 0% 98%; /* Near White */
-    --destructive: 0 72.2% 50.6%; /* Slightly less intense Red */
+    --destructive: 0 72.2% 50.6%; /* Brighter Red for dark */
     --destructive-foreground: 0 0% 98%; /* Near White */
     --border: 0 0% 25%; /* Darker Grey */
     --input: 0 0% 25%; /* Darker Grey */
-    --ring: 285 80% 70%; /* Lighter Purple */
+    --ring: 0 80% 65%; /* #F06A6A - Lighter Red */
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-background: 0 0% 10%; /* Near Black */
+    --sidebar-foreground: 0 0% 98%; /* Near White */
+    --sidebar-primary: 0 80% 65%; /* Lighter Red */
+    --sidebar-primary-foreground: 0 0% 10%; /* Near Black */
+    --sidebar-accent: 0 0% 20%; /* Dark Grey */
+    --sidebar-accent-foreground: 0 0% 98%; /* Near White */
+    --sidebar-border: 0 0% 25%; /* Darker Grey */
+    --sidebar-ring: 0 80% 65%; /* Lighter Red */
   }
 }
 
